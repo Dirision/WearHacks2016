@@ -1,1 +1,0 @@
-g++ -o shift shift.cpp test.cpp
