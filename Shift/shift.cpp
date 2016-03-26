@@ -1,10 +1,14 @@
+#include <cstdio>
+#include <string>
+#include <iostream>
+#include "bitmap_image.hpp"
 
-int main(){
+using namespace std;
 
-
-return 0;
+int squeeze(string imageName)
+{
+	// 	printf("test\n");	
+	bitmap_image image(imageName);	
+	
+	return 0;
 }
-
-
-
-
