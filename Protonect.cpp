@@ -372,14 +372,14 @@ int main(int argc, char *argv[])
     framecount++;
 
 #ifdef EXAMPLES_WITH_OPENGL_SUPPORT
-	//for(int i = 0; i < ir->width * ir->height; i += 1){
-	//    float *irPixel = (float *)(&(ir->data[i * 4]));
-	//}
+/*	for(int i = 0; i < ir->width * ir->height; i += 1){
+	   float *irPixel = (float *)(&(ir->data[i * 4]));
+	}
 	    // Cropping out noise
-	    //if (*irPixel <= 200.f) {
-	//	*irPixel = 0.f;
-	 //   }
-		//*irPixel *= 5;
+	   if (*irPixel <= 200.f) {
+		*irPixel = 0.f;
+	   }
+		*irPixel *= 5;
 		//*irPixel += 100	;	
 	/*for(int i = 0; i < rgb->width * rgb->height; i += 1){
 
@@ -388,19 +388,21 @@ int main(int argc, char *argv[])
 	    	char *red = green + 1;
 		*blue=255;
 		*green=255;	
-		*red=255;
-		}*/
-		for(int i = 0; i < ir->width * ir->height; i += 1) {
+		*red=255;	
+		}*/	
+	for(int i = 0; i < ir->width * ir->height; i += 1) {
 			int w = ir->width;
 			int h = ir->height;
-			int index = i % w + rgb->width*(i / w);
-			char *blue = (char *)(&(rgb->data[4 * index]));
+			int index = i % (w) + rgb->width*(i / (w));
+
+			float intensity = *((float *) &(ir->data[4*i])) / 65535.f;
+
+			char *blue = (char *)(&(rgb->data[8 * index]));
 			char *green = blue + 1;
 			char *red = green + 1;
-			//*green = 0;
-			//*blue = 0;
-			//*red *= 0;
-			float intensity = *((float *) &(ir->data[4*i])) / 65535.f;
+			*green = 0;
+			*blue = 0;
+			*red = 0;
 
 			HSV huePixel = rgb2hsv((RGB) {
 				r: ((float)*red) / 255.f,
@@ -570,5 +572,4 @@ RGB hsv2rgb(HSV in) {
 	}
 	return out;     
 }
-
 
