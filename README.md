@@ -2,7 +2,7 @@
 Repo for WearHacks 2016 
 
 # EDITORS ARE:
-- Nick DickRisio
+- Nick DiRisio
 - Elijah Mirecki
 - Josh Wolf
 - Kulraj Dhanjal
