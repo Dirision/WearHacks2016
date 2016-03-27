@@ -64,6 +64,7 @@ RGB hsv2rgb(HSV in);
 static inline void blendIr(RGB *rgb, double intensity);
 static inline void compressHsv(HSV *hsv, double degrees);
 static inline double iScaler(double x);
+static inline void blendInIrToPixel(int *bgrx, float intensity);
 bool protonect_shutdown = false; ///< Whether the running application should shut down.
 
 void sigint_handler(int s)
@@ -393,36 +394,14 @@ int main(int argc, char *argv[])
 	for(int i = 0; i < ir->width * ir->height; i += 1) {
 			int w = ir->width;
 			int h = ir->height;
-			int index = i % (w) + rgb->width*(i / (w));
 
-			float intensity = *((float *) &(ir->data[4*i])) / 65535.f;
+			float intensity = iScalar(*((float *) &(ir->data[4*i])) / 65535.f);
 
-			char *blue = (char *)(&(rgb->data[8 * index]));
-			char *green = blue + 1;
-			char *red = green + 1;
-			*green = 0;
-			*blue = 0;
-			*red = 0;
-
-			HSV huePixel = rgb2hsv((RGB) {
-				r: ((float)*red) / 255.f,
-				g: ((float)*green) / 255.f,
-				b: ((float)*blue) / 255.f,
-			});
-			/*RGB rgbPixel = {
-				r: ((double)*red) / 255.f,
-				g: ((double)*green) / 255.f,
-				b: ((double)*blue) / 255.f,
-			};*/
-			compressHsv(&huePixel, 60.f);
-			
-			RGB rgbPixel = hsv2rgb(huePixel);
-			//intensity = intensity > .1f ? 1.f : 0.f;			
-			blendIr(&rgbPixel, iScaler(intensity));
-
-			*red = rgbPixel.r * 255;
-			*green = rgbPixel.g * 255;
-			*blue = rgbPixel.b * 255;
+			int index = (i % (w) + rgb->width*(i / (w))) * 2;
+			blendInIrToPixel(rgb->[index * 8], intensity);
+			blendInIrToPixel(rgb->[index * 8 + 4], intensity);
+			blendInIrToPixel(rgb->[index * 8 + rgb->width], intensity);
+			blendInIrToPixel(rgb->[index * 8 + 4 + rgb->width], intensity);
 		}
     viewer.addFrame("RGB", rgb);
     viewer.addFrame("ir", ir);
@@ -449,13 +428,31 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+
 static inline double iScaler(double x){
-
-	
 	return 0.5 * std::log10(99*x + 1);
-
 }
 
+static inline void blendInIrToPixel(int *bgrx, float intensity) {
+	char *blue = (char *)bgrx;
+	char *green = blue + 1;
+	char *red = blue + 2;
+
+	HSV huePixel = rgb2hsv((RGB) {
+		r: ((float)*red) / 255.f,
+		g: ((float)*green) / 255.f,
+		b: ((float)*blue) / 255.f,
+	});
+	// Shift the reds to yellows and compress the other colors
+	compressHsv(&huePixel, 60.f);
+
+	RGB rgbPixel = hsv2rgb(huePixel);
+	blendIr(&rgbPixel, intensity);
+
+	*red = rgbPixel.r * 255;
+	*green = rgbPixel.g * 255;
+	*blue = rgbPixel.b * 255;
+}
 
 static inline void blendIr(RGB *rgb, double intensity) {
 	// The IR dominanetes more depending on the intensity
