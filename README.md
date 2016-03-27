@@ -3,7 +3,7 @@ Repo for WearHacks 2016
 
 # EDITORS ARE:
 - Nick DiRisio
-- Elimirks
-- Josh Wolfe 
-- Kulraj Dhanjil
+- Elijah Mirecki
+- Josh Wolfe
+- Kulraj Dhanjal
 - Austin Saladin Wells
