@@ -41,9 +41,29 @@
 #ifdef EXAMPLES_WITH_OPENGL_SUPPORT
 #include "viewer.h"
 #endif
+#include <stdio.h>
+#include <algorithm>
+#include <cmath>
+typedef struct {
+	double r; // percent
+	double g; // percent
+	double b; // percent
+} RGB;
 
-#include "colorManipulationTools.h"
+typedef struct {
+	double h; // angle in degrees
+	double s; // percent
+	double v; // percent
+} HSV;
 
+// Taken from http://stackoverflow.com/questions/3018313
+HSV rgb2hsv(RGB in);
+RGB hsv2rgb(HSV in);
+
+// Intensity in percentage
+static inline void blendIr(RGB *rgb, double intensity);
+static inline void compressHsv(HSV *hsv, double degrees);
+static inline double iScaler(double x);
 bool protonect_shutdown = false; ///< Whether the running application should shut down.
 
 void sigint_handler(int s)
@@ -387,11 +407,16 @@ int main(int argc, char *argv[])
 				g: ((float)*green) / 255.f,
 				b: ((float)*blue) / 255.f,
 			});
-
-			compressHsv(&huePixel, 10.f);
+			/*RGB rgbPixel = {
+				r: ((double)*red) / 255.f,
+				g: ((double)*green) / 255.f,
+				b: ((double)*blue) / 255.f,
+			};*/
+			compressHsv(&huePixel, 60.f);
 			
 			RGB rgbPixel = hsv2rgb(huePixel);
-			blendIr(&rgbPixel, intensity);
+			//intensity = intensity > .1f ? 1.f : 0.f;			
+			blendIr(&rgbPixel, iScaler(intensity));
 
 			*red = rgbPixel.r * 255;
 			*green = rgbPixel.g * 255;
@@ -422,4 +447,128 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+static inline double iScaler(double x){
+
+	
+	return 0.5 * std::log10(99*x + 1);
+
+}
+
+
+static inline void blendIr(RGB *rgb, double intensity) {
+	// The IR dominanetes more depending on the intensity
+	rgb->r *= (1.f - intensity);
+	rgb->g *= (1.f - intensity);
+	rgb->b *= (1.f - intensity);
+
+	// Blend it up
+	rgb->r += intensity; //	//but will it blend?
+}
+
+static inline void compressHsv(HSV *hsv, double degrees) {
+	const double huePercent = hsv->h / 360.f;
+	const double newAmplitude = 360.f - degrees;
+	hsv->h = (huePercent * newAmplitude) + degrees;
+}
+
+HSV rgb2hsv(RGB in) {
+	HSV         out;
+	double      min, max, delta;
+
+	min = in.r < in.g ? in.r : in.g;
+	min = min  < in.b ? min  : in.b;
+
+	max = in.r > in.g ? in.r : in.g;
+	max = max  > in.b ? max  : in.b;
+
+	out.v = max;                                // v
+	delta = max - min;
+	if (delta < 0.00001)
+	{
+		out.s = 0;
+		out.h = 0; // undefined, maybe nan?
+		return out;
+	}
+	if( max > 0.0 ) { // NOTE: if Max is == 0, this divide would cause a crash
+		out.s = (delta / max);                  // s
+	} else {
+		// if max is 0, then r = g = b = 0              
+		// s = 0, v is undefined
+		out.s = 0.0;
+		out.h = NAN;                            // its now undefined
+		return out;
+	}
+	if( in.r >= max )                           // > is bogus, just keeps compilor happy
+		out.h = ( in.g - in.b ) / delta;        // between yellow & magenta
+	else
+		if( in.g >= max )
+			out.h = 2.0 + ( in.b - in.r ) / delta;  // between cyan & yellow
+		else
+			out.h = 4.0 + ( in.r - in.g ) / delta;  // between magenta & cyan
+
+	out.h *= 60.0;                              // degrees
+
+	if( out.h < 0.0 )
+		out.h += 360.0;
+
+	return out;
+}
+
+RGB hsv2rgb(HSV in) {
+	double      hh, p, q, t, ff;
+	long        i;
+	RGB         out;
+
+	if(in.s <= 0.0) {       // < is bogus, just shuts up warnings
+		out.r = in.v;
+		out.g = in.v;
+		out.b = in.v;
+		return out;
+	}
+	hh = in.h;
+	if(hh >= 360.0) hh = 0.0;
+	hh /= 60.0;
+	i = (long)hh;
+	ff = hh - i;
+	p = in.v * (1.0 - in.s);
+	q = in.v * (1.0 - (in.s * ff));
+	t = in.v * (1.0 - (in.s * (1.0 - ff)));
+
+	switch(i) {
+		case 0:
+			out.r = in.v;
+			out.g = t;
+			out.b = p;
+			break;
+		case 1:
+			out.r = q;
+			out.g = in.v;
+			out.b = p;
+			break;
+		case 2:
+			out.r = p;
+			out.g = in.v;
+			out.b = t;
+			break;
+
+		case 3:
+			out.r = p;
+			out.g = q;
+			out.b = in.v;
+			break;
+		case 4:
+			out.r = t;
+			out.g = p;
+			out.b = in.v;
+			break;
+		case 5:
+		default:
+			out.r = in.v;
+			out.g = p;
+			out.b = q;
+			break;
+	}
+	return out;     
+}
+
 
