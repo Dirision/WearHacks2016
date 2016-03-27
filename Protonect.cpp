@@ -42,9 +42,9 @@
 #include "viewer.h"
 #endif
 
+#include "colorManipulationTools.h"
 
 bool protonect_shutdown = false; ///< Whether the running application should shut down.
-float maxIR = 0;    
 
 void sigint_handler(int s)
 {
@@ -354,8 +354,6 @@ int main(int argc, char *argv[])
 #ifdef EXAMPLES_WITH_OPENGL_SUPPORT
 	//for(int i = 0; i < ir->width * ir->height; i += 1){
 	//    float *irPixel = (float *)(&(ir->data[i * 4]));
-	//	if (*irPixel > maxIR)
-	//		maxIR = *irPixel;
 	//}
 	    // Cropping out noise
 	    //if (*irPixel <= 200.f) {
@@ -372,18 +370,33 @@ int main(int argc, char *argv[])
 		*green=255;	
 		*red=255;
 		}*/
-	for(int i = 0; i < ir->width * ir->height; i += 1){
-		int w = ir->width;
-		int h = ir->height;
-		int index = i % w + rgb->width*(i / w);
-		char *blue = (char *)(&(rgb->data[4 * index]));
-		char *green = blue + 1;
-	    	char *red = green + 1;
-		//*green = 0;
-		//*blue = 0;
-		*red *= *((float *) &(ir->data[4*i])) / 65535.f;
-    }
-    printf("%f\n", maxIR);
+		for(int i = 0; i < ir->width * ir->height; i += 1) {
+			int w = ir->width;
+			int h = ir->height;
+			int index = i % w + rgb->width*(i / w);
+			char *blue = (char *)(&(rgb->data[4 * index]));
+			char *green = blue + 1;
+			char *red = green + 1;
+			//*green = 0;
+			//*blue = 0;
+			//*red *= 0;
+			float intensity = *((float *) &(ir->data[4*i])) / 65535.f;
+
+			HSV huePixel = rgb2hsv((RGB) {
+				r: ((float)*red) / 255.f,
+				g: ((float)*green) / 255.f,
+				b: ((float)*blue) / 255.f,
+			});
+
+			compressHsv(&huePixel, 10.f);
+			
+			RGB rgbPixel = hsv2rgb(huePixel);
+			blendIr(&rgbPixel, intensity);
+
+			*red = rgbPixel.r * 255;
+			*green = rgbPixel.g * 255;
+			*blue = rgbPixel.b * 255;
+		}
     viewer.addFrame("RGB", rgb);
     viewer.addFrame("ir", ir);
     viewer.addFrame("depth", depth);
@@ -409,3 +422,4 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+
