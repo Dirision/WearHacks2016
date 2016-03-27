@@ -61,7 +61,7 @@ int main()
 
 		// austin do your drawing here 
 		// your window is called view
-
+		//  aaaaaaaaa
 		view.display();
 		window.display();
 	} // end of while loop
