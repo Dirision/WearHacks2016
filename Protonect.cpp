@@ -44,7 +44,7 @@
 
 
 bool protonect_shutdown = false; ///< Whether the running application should shut down.
-    
+float maxIR = 0;    
 
 void sigint_handler(int s)
 {
@@ -352,16 +352,17 @@ int main(int argc, char *argv[])
     framecount++;
 
 #ifdef EXAMPLES_WITH_OPENGL_SUPPORT
-	/*for(int i = 0; i < ir->width * ir->height; i += 1){
-	    float *irPixel = (float *)(&(ir->data[i * 4]));
-
+	//for(int i = 0; i < ir->width * ir->height; i += 1){
+	//    float *irPixel = (float *)(&(ir->data[i * 4]));
+	//	if (*irPixel > maxIR)
+	//		maxIR = *irPixel;
+	//}
 	    // Cropping out noise
-	    if (*irPixel <= 200.f) {
-		*irPixel = 0.f;
-	    }
+	    //if (*irPixel <= 200.f) {
+	//	*irPixel = 0.f;
+	 //   }
 		//*irPixel *= 5;
 		//*irPixel += 100	;	
-    }    *	/
 	/*for(int i = 0; i < rgb->width * rgb->height; i += 1){
 
 		char *blue = (char *)(&(rgb->data[i*4]));
@@ -371,25 +372,18 @@ int main(int argc, char *argv[])
 		*green=255;	
 		*red=255;
 		}*/
-	for(int i = 0; i < rgb->width * rgb->height; i += 1){
-
-		char *blue = (char *)(&(rgb->data[i*4]));
+	for(int i = 0; i < ir->width * ir->height; i += 1){
+		int w = ir->width;
+		int h = ir->height;
+		int index = i % w + rgb->width*(i / w);
+		char *blue = (char *)(&(rgb->data[4 * index]));
 		char *green = blue + 1;
 	    	char *red = green + 1;
-		if(i >= (rgb->width * 1305) ){ 		
-			*blue=255;
-			*green=0;	
-			*red=255;
-		}
-		else{
-			//*blue=255;
-			//*green=0;	
-			//int k = i % 1080;
-			int j = i / 21;
-			*red = 255 * 150 * (ir->data[j]/ 65535.f);
-		}
+		//*green = 0;
+		//*blue = 0;
+		*red *= *((float *) &(ir->data[4*i])) / 65535.f;
     }
-    //printf("%f\n", );
+    printf("%f\n", maxIR);
     viewer.addFrame("RGB", rgb);
     viewer.addFrame("ir", ir);
     viewer.addFrame("depth", depth);
